@@ -196,7 +196,7 @@ cat_ctrl1 <- data.frame(added = 15110/52, removed = ((1-0.3) * (15110/52)), star
 cat_ctrl2 <- data.frame(added = (15110/52), removed = ((1-0.16) * (15110/52)), start_date = "01/04/2025",
                         end_date = "31/03/2027" )
 
-tno_ctrl1 <- data.frame(added = 1043/52, removed = ((1-0.23) * (1043/52)), start_date = "01/04/2025",
+tno_ctrl1 <- data.frame(added = 1043/52, removed = ((1-0.22) * (1043/52)), start_date = "01/04/2025",
                         end_date = "31/03/2026" )
 
 tno_ctrl2 <- data.frame(added = (1043/52), removed = ((1-0.10) * (1043/52)), start_date = "01/04/2025",
