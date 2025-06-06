@@ -14,6 +14,9 @@ qexp(0.85)
 calc_target_mean_wait(18, qexp(0.65))
 calc_target_mean_wait(18, qexp(0.85))
 calc_target_mean_wait(18, qexp(0.95))
+calc_target_mean_wait(18, qexp(0.92))
+
+
 
 calc_target_queue_size(291, 18, qexp(0.65))
 calc_target_queue_size(291, 18, qexp(0.85))
@@ -86,12 +89,11 @@ my_sim <-
 sim_wl <-  wl_queue_size(my_sim)
 
 
-b<- wl_simulator(start_date = "2027-04-01",
-                 end_date = "2028-03-31",
-                 
+b <- wl_simulator(start_date = "2026-04-01",
+                 end_date = "2027-03-31",
                  demand = 291,
                  capacity = 291,
-                 waiting_list = a)
+                 waiting_list = my_sim)
 
 sim_wl2 <-  wl_queue_size(b)
 
@@ -99,6 +101,19 @@ library(ggplot2)
 library(scales)
 
 ggplot(sim_wl, aes(dates, queue_size)) +
+  geom_line() +
+  geom_hline(yintercept = 2761, col = "sienna3" ) +
+  scale_y_continuous(name = "Queue Size", labels = comma) +
+  scale_x_date(name = "Month", date_labels = "%b-%y"
+               , date_breaks = "2 months", expand = c(0.1, 0.1)) +
+  labs(
+    title = "Simulated waiting list for cateracts, removing 33% activity from ISPs",
+  ) +
+  theme_minimal()
+
+
+
+ggplot(sim_wl2, aes(dates, queue_size)) +
   geom_line() +
   geom_hline(yintercept = 2761, col = "sienna3" ) +
   scale_y_continuous(name = "Queue Size", labels = comma) +

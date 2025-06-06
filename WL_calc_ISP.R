@@ -7,7 +7,7 @@ library(NHSRwaitinglist)
 # Target is 65% within 18 weeks
 
 
-func_wlcalc<- function(annual_activity, waiting_list_current = 0, target = 18, target_percent=0.65, growth_period_years=1){
+func_wlcalc <- function(annual_activity, waiting_list_current = 0, target = 18, target_percent=0.65, growth_period_years=1){
   
   weekly_activity <- annual_activity/52
   
@@ -60,7 +60,7 @@ func_wlcalc(104
 # simulate to check
 
 
-func_wlcalc_sim<- function(annual_activity, demand_reduction_proportion, waiting_list_current = 0,
+func_wlcalc_sim <- function(annual_activity, demand_reduction_proportion, waiting_list_current = 0,
                        start_date = "2025-04-01", growth_period_years=2, 
                        target = 18, target_percent=0.65
                        ){
@@ -149,7 +149,7 @@ func_wlcalc_sim<- function(annual_activity, demand_reduction_proportion, waiting
 # 1 year
 func_wlcalc(15110, waiting_list_current = 0, growth_period_years = 1)
 
-cat1<- func_wlcalc_sim(15110, 0.30, waiting_list_current = 0, growth_period_years = 1)
+cat1 <- func_wlcalc_sim(15110, 0.30, waiting_list_current = 0, growth_period_years = 1)
 cat1$gg_waitinglist
 
 # 1 year
@@ -175,7 +175,7 @@ cat2$gg_waitinglist
 # 1 year
 
 func_wlcalc(1043, waiting_list_current = 80, growth_period_years = 1)
-hk1<- func_wlcalc_sim(1043, 0.25, waiting_list_current = 80, growth_period_years = 1)
+hk1 <- func_wlcalc_sim(1043, 0.25, waiting_list_current = 80, growth_period_years = 1)
 hk1$gg_waitinglist
 
 # 2 years
@@ -206,20 +206,20 @@ tno_ctrl2 <- data.frame(added = (1043/52), removed = ((1-0.10) * (1043/52)), sta
 plan(multisession, workers = 6)
 
 start_1 <- Sys.time()
-future_out1 <- do.call(list, future_replicate(1000, bsol_simulate_WL(cat_ctrl1, starting_wl = 0), simplify = FALSE))
+future_out1 <- do.call(list, future_replicate(100, bsol_simulate_WL(cat_ctrl1, starting_wl = 0), simplify = FALSE))
 end_1 <- Sys.time()
 
 start_2 <- Sys.time()
-future_out2 <- do.call(list, future_replicate(1000, bsol_simulate_WL(cat_ctrl2, starting_wl = 0), simplify = FALSE))
+future_out2 <- do.call(list, future_replicate(100, bsol_simulate_WL(cat_ctrl2, starting_wl = 0), simplify = FALSE))
 end_2 <- Sys.time()
 
 #future_out3_24 <- future_out3
 start_3 <- Sys.time()
-future_out3 <- do.call(list, future_replicate(1000, bsol_simulate_WL(tno_ctrl1, starting_wl = 80), simplify = FALSE))
+future_out3 <- do.call(list, future_replicate(100, bsol_simulate_WL(tno_ctrl1, starting_wl = 80), simplify = FALSE))
 end_3 <- Sys.time()
 
 start_4 <- Sys.time()
-future_out4 <- do.call(list, future_replicate(1000, bsol_simulate_WL(tno_ctrl2, starting_wl = 80), simplify = FALSE))
+future_out4 <- do.call(list, future_replicate(100, bsol_simulate_WL(tno_ctrl2, starting_wl = 80), simplify = FALSE))
 end_4 <- Sys.time()
 
 
@@ -288,6 +288,7 @@ f4 <- data.frame(dates=as.Date(f4$dates), unlist(f4$queue_size))
 library(tidyverse)
 library(scales)
 library(BSOLTheme)
+
 colours <- RColorBrewer::brewer.pal(n = 3, name="Dark2")
 
 fcat <- 

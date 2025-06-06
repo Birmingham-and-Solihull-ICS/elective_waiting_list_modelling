@@ -4,6 +4,7 @@ library(scales)
 # Quantiles of the distribution
 exp_dt <-data.frame(
   `6` = qexp(p = seq(0.01,1, 0.01), rate = 1/6),
+  `6` = qexp(p = seq(0.01,1, 0.01), rate = 1/6),
   `9` = qexp(p = seq(0.01,1, 0.01), rate = 1/9),
   `12` = qexp(p = seq(0.01,1, 0.01), rate = 1/12),
   `15` = qexp(p = seq(0.01,1, 0.01), rate = 1/15),
@@ -31,7 +32,7 @@ exp_dt %>%
   group_by(`Mean waiting time`, uppertail) %>% 
   count()
 
-a<- exp_dt %>% 
+a <- exp_dt %>% 
   filter(name == "X6")
   
 
@@ -59,18 +60,20 @@ exp_dt %>%
 distributions_df <- tibble::tibble(
   x = seq(0, 65, length.out = 1000),
   `6` = dexp(x, 1/6),
+  `7.12` = dexp(x, 1/7.12),
   `9` = dexp(x, 1/9),
   `12` = dexp(x, 1/12),
   `15` = dexp(x, 1/15),
   `18` = dexp(x, 1/18)
 ) |> 
-  pivot_longer(-x) |> 
+  pivot_longer(- x) |> 
   mutate(
     `Mean waiting time (weeks)` = factor(
       name, 
-      levels = c("6", "9", "12", "15", "18"),
+      levels = c("6", "7.12", "9", "12", "15", "18"),
       labels = c(
         "6 (5% > 18 weeks)", 
+        "7.12 (8% > 18 weeks)",
         "9 (14% > 18 weeks)",
         "12 (23% > 18 weeks)", 
         "15 (31% > 18 weeks)", 
