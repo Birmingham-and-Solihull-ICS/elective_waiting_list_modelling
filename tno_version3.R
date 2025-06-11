@@ -31,7 +31,7 @@ programme_dts <-
     )
   )
 
-# soft launch jan - 26 10 %   - 1. T&O and Gastro, 2. urology, ENT, gynae & cardiology, 3. liver, dermatology, neurology, CYP?, - November 2026
+# soft launch jan - 26 10 %   - 1. T&O and Gastro (mandate might only include 50%, then 100% in Nov), 2. urology, ENT, gynae & cardiology, 3. liver, dermatology, neurology, CYP?, - November 2026
 # all practises April 20% -   live august, August = soft launch 3 months 50%, THEN FULL,  3 as 2 from November 2026 
 # July - 26 - 100
 
@@ -382,13 +382,13 @@ Sys.time() - start
 
 # Pull out each queue
 tno_queue_2 <-
-  wl_queue_size(tno_sims[[NROW(tno_sims)]])
+  wl_queue_size(tno_sims_2[[NROW(tno_sims_2)]])
 
 tno_queue_20_2 <-
-  wl_queue_size(tno_sims_20[[NROW(tno_sims_20)]])
+  wl_queue_size(tno_sims_20_2[[NROW(tno_sims_20_2)]])
 
 tno_queue_40_2 <-
-  wl_queue_size(tno_sims_40[[NROW(tno_sims_40)]])
+  wl_queue_size(tno_sims_40_2[[NROW(tno_sims_40_2)]])
 
 
 # Visual check
@@ -403,6 +403,11 @@ ggplot(tno_queue_2, aes(dates, queue_size)) +
     x = "Month"
   )
 
+
+# Referral after T3
+tno_sims_2[[NROW(tno_sims_2)]]$referral_after_t3 <- ifelse(tno_sims_2[[NROW(tno_sims_2)]]$Referral < programme_dts$startdate[2], 0, 1)
+tno_sims_20_2[[NROW(tno_sims_20_2)]]$referral_after_t3 <- ifelse(tno_sims_20_2[[NROW(tno_sims_20_2)]]$Referral < programme_dts$startdate[2], 0, 1)
+tno_sims_40_2[[NROW(tno_sims_40_2)]]$referral_after_t3 <- ifelse(tno_sims_40_2[[NROW(tno_sims_40_2)]]$Referral < programme_dts$startdate[2], 0, 1)
 
 # Is target met?
 tno_queue_2 <-
@@ -441,7 +446,9 @@ tno_summary_2 <-
            queue_at_t3 = tno_queue_2 |> filter(dates >= as.Date(programme_dts[programme_dts[, "descr"] == "T3",1]
                                                               , "%d/%m/%Y")) |>  slice_head(n = 1) |> pull(queue_size),
            target_met = tno_queue_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(meet_target_with),
-           target_met_date =  tno_queue_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates)
+           target_met_date =  tno_queue_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates),
+           T4_date = tryCatch((tno_sims_2[[NROW(tno_sims_2)]] |> filter(referral_after_t3 == 1) |> 
+                       slice_head(n=1) |> pull(Referral)), error = function(e) NA)
            
            
          ),
@@ -453,7 +460,9 @@ tno_summary_2 <-
            queue_at_t3 = tno_queue_20_2 |> filter(dates >= as.Date(programme_dts[programme_dts[, "descr"] == "T3",1]
                                                                  , "%d/%m/%Y")) %>% slice_head(n = 1) %>% pull(queue_size),
            target_met = tno_queue_20_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(meet_target_with),
-           target_met_date =  tno_queue_20_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates)
+           target_met_date =  tno_queue_20_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates),
+           T4_date = tryCatch((tno_sims_20_2[[NROW(tno_sims_20_2)]] |> filter(referral_after_t3 == 1) |> 
+                                 slice_head(n=1) |> pull(Referral)), error = function(e) NA)
            
          ),
        tno_sim_40 = 
@@ -464,57 +473,52 @@ tno_summary_2 <-
            queue_at_t3 = tno_queue_40_2 |> filter(dates >= as.Date(programme_dts[programme_dts[, "descr"] == "T3",1]
                                                                  , "%d/%m/%Y")) %>% slice_head(n = 1) %>% pull(queue_size),
            target_met = tno_queue_40_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(meet_target_with),
-           target_met_date =  tno_queue_40_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates)
+           target_met_date =  tno_queue_40_2 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates),
+           T4_date = tryCatch((tno_sims_40_2[[NROW(tno_sims_40_2)]] |> filter(referral_after_t3 == 1) |> 
+                                 slice_head(n=1) |> pull(Referral)), error = function(e) NA)
            
          )
   )
 
 
-# add difference calculations that can't be done in list creation.
+# add difference calculations that can't be done in list creation, or reference calcualted values
 tno_summary_2 <- lapply(tno_summary_2, function(x) {c(x, "distance_from_target_t3" = x$queue_at_t3 - x$target_queue_size)})
 tno_summary_2 <- lapply(tno_summary_2, function(x) {c(x, "weekly_capacity_release" = x$current_target_capacity - x$future_target_capacity)})
 
 
 
-
-
-
 library(future.apply)
-
 
 plan(multisession, workers = 6)
 
 start_5 <- Sys.time()
-future_out1 <- future_replicate(100
+future_out1 <- future_replicate(50
                                 , bsol_simulate_WL(control_periods_2, start_date_name = "Start", end_date_name = "end"
                                                    , adds_name = "Adds",  removes_name = "Removes")
                                 , simplify = FALSE)
 end_5 <- Sys.time()
 
 start_6 <- Sys.time()
-future_out2 <- future_replicate(100
+future_out2 <- future_replicate(50
                                 , bsol_simulate_WL(control_periods_2, start_date_name = "Start", end_date_name = "end"
-                                                   , adds_name = "Adds_20",  removes_name = "Removes_20")
+                                                   , adds_name = "Adds_20",  removes_name = "Removes_20"
+                                                   , reference_date = programme_dts$startdate[2])
                                 , simplify = FALSE)
 end_6 <- Sys.time()
+end_6 - start_6
 
 start_7 <- Sys.time()
-future_out3 <- future_replicate(100
+future_out3 <- future_replicate(50
                                 , bsol_simulate_WL(control_periods_2, start_date_name = "Start", end_date_name = "end"
-                                                   , adds_name = "Adds_40",  removes_name = "Removes_40")
+                                                   , adds_name = "Adds_40",  removes_name = "Removes_40"
+                                                   , reference_date = programme_dts$startdate[2])
                                 , simplify = FALSE)
 end_7 <- Sys.time()
 
 plan(sequential)
 
-test_rep <- bsol_simulate_WL(control_periods_2
-                             , start_date_name = "Start"
-                              , end_date_name = "end"
-                              , adds_name = "Adds"
-                              ,  removes_name = "Removes"
-                             # , starting_wl = 10018
-                             )
 
+# Turn around the MC lists and calcualte point-wise data
 e <- do.call("rbind", future_out1)
 e2 <- do.call("rbind", future_out2)
 e3 <- do.call("rbind", future_out3)
@@ -575,6 +579,8 @@ ggplot(f, aes(dates, mean_q)) +
 
 
 #saveRDS(future_out1, "./output/v3/tno_mc1.rds")
+#saveRDS(future_out2, "./output/v3/tno_mc2.rds")
+#saveRDS(future_out3, "./output/v3/tno_mc3.rds")
 
 # Summary on mc
 # Is target met?
@@ -621,8 +627,465 @@ tno_summary_2$tno_sim_40$queue_at_t3_mc <- f3 |> filter(dates >= as.Date(program
                                                                      , "%d/%m/%Y")) |>  slice_head(n = 1) |> pull(mean_q)
 tno_summary_2$tno_sim_40$target_met_mc <- f3 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(meet_target_with)
 tno_summary_2$tno_sim_40$target_met_date_mc =  f3 |> filter(meet_target_with == 1) |> slice_head(n = 1) |> pull(dates)
+# tno_summary_2$tno_sim_40$T4_date_mc = tryCatch((tno_sims_40_2[[NROW(tno_sims_40_2)]] |> filter(referral_after_t3 == 1) |> 
+#                       slice_head(n=1) |> pull(Referral)), error = function(e) NA)
 
 
 
 # add difference calculations that can't be done in list creation.
 tno_summary_2 <- lapply(tno_summary_2, function(x) {c(x, "distance_from_target_t3_mc" = x$queue_at_t3_mc - x$target_queue_size)})
+
+
+# # Referral after T3 mc
+# tno_sim16_5$referral_after_t3 <- ifelse(tno_sim16_5$referral < programme_dts$startdate[2], 0, 1)
+# 
+# 
+tno_summary_2$tno_sim$t4_date_mc <- tryCatch((f |> filter(dates == tno_summary_2$tno_sim$target_met_date_mc) |>
+                                        slice_head(n=1) |> pull(dates)), error = function(e) NA)
+
+tno_summary_2$tno_sim_20$t4_date_mc <- tryCatch((f2 |> filter(dates == tno_summary_2$tno_sim_20$target_met_date_mc) |>
+                                       slice_head(n=1) |> pull(dates)), error = function(e) NA)
+
+tno_summary_2$tno_sim_40$t4_date_mc <- tryCatch(( f3 |> filter(dates == tno_summary_2$tno_sim_40$target_met_date_mc) |>
+                                        slice_head(n=1) |> pull(dates)), error = function(e) NA)
+
+
+# typeof(tno_sims_20_2[[18]])
+
+
+
+
+
+
+
+## Full marked up graph
+
+# 
+# a_wl_fake_setup <- filter(data.frame(tno_sims_20_2[[18]])
+#                           , Referral <= as.Date(tno_summary_2$tno_sim_20$target_met_date_mc, format = "%Y-%m-%d")) |> 
+#                     filter(
+#                       !Removal < as.Date(tno_summary_2$tno_sim_20$target_met_date_mc, format = "%Y-%m-%d")
+#                       #    | is.na(Removal)
+#                       ) |> select(Referral, Removal)
+#        
+# 
+# b_wl_fake_setup <- filter(data.frame(tno_sims_40_2[[18]]), 
+#                           Removal >= as.Date(tno_summary_2$tno_sim_40$target_met_date_mc, format = "%Y-%m-%d")
+#                           | is.na(Removal)) |> select(Referral, Removal)
+# 
+
+a_wl_fake_setup  <-
+  data.frame(
+    Referral = rep(as.Date(tno_summary_2$tno_sim_20$target_met_date_mc, format = "%Y-%m-%d")-1, tno_summary_2$tno_sim_20$target_queue_size)
+    , Removal = rep(as.Date(NA), tno_summary_2$tno_sim_20$target_queue_size)
+  )
+
+b_wl_fake_setup  <-
+  data.frame(
+    Referral = rep(as.Date(tno_summary_2$tno_sim_40$target_met_date_mc, format = "%Y-%m-%d")-1, tno_summary_2$tno_sim_40$target_queue_size)
+    , Removal = rep(as.Date(NA), tno_summary_2$tno_sim_40$target_queue_size)
+  )
+
+
+
+fake_tail_20 <- wl_simulator(
+              tno_summary_2$tno_sim_20$target_met_date_mc
+             , tail(control_periods$end, 1)
+             , 404
+             , calc_target_capacity(404, 6, 1)
+             , a_wl_fake_setup
+             )
+
+wl_queue_size(fake_tail_20)
+wl_queue_size(a_wl_fake_setup)
+
+plan(multisession, workers = 6)
+
+fake_tail_20_mc <- future_replicate(50
+                                    , wl_queue_size(
+                                      wl_simulator(control_periods_2$Start[8]
+                                    , tail(control_periods_2$end, 1)
+                                    , 404
+                                    , calc_target_capacity(404, 6, 1)
+                                    , a_wl_fake_setup)
+                                    ), simplify = FALSE
+)
+
+fake_tail_40_mc <- future_replicate(50
+                             , wl_queue_size(
+                               wl_simulator(tno_summary_2$tno_sim_40$target_met_date_mc
+                             , tail(control_periods_2$end, 1)
+                             , 303
+                             , calc_target_capacity(303, 6, 1)
+                             , b_wl_fake_setup) 
+                             ), simplify = FALSE
+)
+
+plan(sequential)
+
+
+# 
+# sim_func <- function(run_id) {
+#   sim <- wl_simulator(start_date = as.Date("2023-04-01"),
+#                       end_date = as.Date("2024-03-31"),
+#                       demand = 100,
+#                       capacity = 105,
+#                       waiting_list = current_wl1)
+#   
+#   cbind(wl_queue_size(sim), run_id)
+# }
+
+# # sequence to iterate over
+# run_sequence <- 1:50
+# 
+# raised_capacity_wl_mc <- lapply(run_sequence, sim_func)
+
+
+plan(sequential)
+
+
+
+
+e2_fk <- do.call("rbind", fake_tail_20_mc )
+e3_fk <- do.call("rbind", fake_tail_40_mc )
+
+f2_fk <- aggregate(queue_size~dates, data=e2_fk, FUN = \(x) 
+                c(mean_q = mean(x),
+                  median_q = median(x), 
+                  lower_95CI = mean(x) - (qnorm(0.975)*(sd(x)/sqrt(length(x)))),
+                  upper_95CI = mean(x) + (qnorm(0.975)*(sd(x)/sqrt(length(x)))),
+                  q_25 = quantile(x, .025, names = FALSE), 
+                  q_75 = quantile(x, .975, names = FALSE))
+)
+
+
+f2_fk <- data.frame(dates = as.Date(f2_fk$dates), unlist(f2_fk$queue_size))
+
+f3_fk <- aggregate(queue_size~dates, data=e3_fk, FUN = \(x) 
+                c(mean_q = mean(x),
+                  median_q = median(x), 
+                  lower_95CI = mean(x) - (qnorm(0.975)*(sd(x)/sqrt(length(x)))),
+                  upper_95CI = mean(x) + (qnorm(0.975)*(sd(x)/sqrt(length(x)))),
+                  q_25 = quantile(x, .025, names = FALSE), 
+                  q_75 = quantile(x, .975, names = FALSE))
+)
+
+
+f3_fk <- data.frame(dates = as.Date(f3_fk$dates), unlist(f3_fk$queue_size))
+
+f2_fk2 <-
+  f2 |> 
+  filter(dates <= tno_summary_2$tno_sim_20$target_met_date_mc) |> 
+  bind_rows(
+    mutate(f2_fk,
+           mean_q = mean_q +tno_summary_2$tno_sim_20$target_queue_size,
+           q_25 = q_25 + tno_summary_2$tno_sim_20$target_queue_size,
+           q_75 = q_75 + tno_summary_2$tno_sim_20$target_queue_size
+    )
+  )
+
+f3_fk2 <-
+  f3 |> 
+  filter(dates <= tno_summary_2$tno_sim_40$target_met_date_mc) |> 
+  bind_rows(
+    mutate(f3_fk,
+           mean_q = mean_q + tno_summary_2$tno_sim_40$target_queue_size,
+           q_25 = q_25 + tno_summary_2$tno_sim_40$target_queue_size,
+           q_75 = q_75 + tno_summary_2$tno_sim_40$target_queue_size
+    )
+  )
+
+
+# fake_tail_20_q <- wl_queue_size(fake_tail_20) |> 
+#   mutate(queue_size = queue_size + tno_summary_2$tno_sim_20$target_queue_size)
+# 
+# fake_tail_40_q <- wl_queue_size(fake_tail_40) |> 
+#   mutate(queue_size = queue_size + tno_summary_2$tno_sim_40$target_queue_size)
+# 
+
+# ft20 <- f2 |> 
+#   #select(dates, queue_size = mean_q) |> 
+#   filter(dates <= tno_summary_2$tno_sim_20$target_met_date_mc) |> 
+#   bind_rows(fake_tail_20_q) |> 
+#   select(dates, mean_q = queue_size)
+#   
+# ft40 <- f3 |> 
+#   select(dates, queue_size = mean_q) |> 
+#   filter(dates <= tno_summary_2$tno_sim_40$target_met_date_mc) |> 
+#   bind_rows(fake_tail_40_q) |> 
+#   select(dates, mean_q = queue_size)
+
+  
+  
+
+
+# Visual check
+ggplot(f, aes(dates, mean_q)) +
+  geom_line(col = colours[2], data = f2_fk2) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[2] 
+              , data = f2_fk2) +
+  geom_line(col = colours[3], data = f3_fk2) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[3] 
+              , data = f3_fk2) +
+  geom_line(col = colours[1]) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[1]) +
+  labs(
+    title = bquote(bold("T&O:") ~ "Monte Carlo sim:"),
+    #subtitle = paste("Phase 1: baseline setting up waiting list \nCapacity = ", capacity_phase1, ", Demand=", demand_phase1),
+    y = "Queue Size",
+    x = "Month"
+  )
+
+
+
+
+# 
+# tno_20_adjusted_queue_2 <- tno_queue_20_16_2
+# 
+# tno_20_adjusted_queue_2_2 <-
+#   tno_queue_20_16_2 %>% 
+#   filter(meet_future_20 == 1)
+# 
+# tno_20_adjusted_queue_2_2$queue_size <- rpois(nrow(tno_20_adjusted_queue_2_2), target_queue_size_20_2)
+# 
+# tno_20_adjusted_queue_2 <-
+#   tno_20_adjusted_queue_2 %>% 
+#   left_join(tno_20_adjusted_queue_2_2, by = "dates", keep = TRUE) %>% 
+#   mutate(dates = dates.x, queue_size = coalesce(queue_size.y, queue_size.x), meet_target = meet_target.x,
+#          meet_future_20 = meet_future_20.x) %>% 
+#   select(dates, queue_size, meet_target, meet_future_20)
+
+
+
+
+
+Extra_tno_graph_20241112 <-
+  
+  ggplot(f, aes(dates, mean_q)) +
+  # vertical lines for time periods
+  geom_vline(xintercept = programme_dts$startdate[1], alpha = 1
+             , colour="black")+
+  geom_vline(xintercept = programme_dts$startdate[2], alpha = 1
+             , colour="black")+
+  
+  geom_vline(xintercept = tno_t4_date_20_2$dates, alpha=1
+             , colour="black")+
+  geom_vline(xintercept = target_20_date_2$dates, alpha=1
+             , colour="black")+
+  
+  geom_line(col=colours[2], data=tno_20_adjusted_queue_2) +
+  geom_line(col=colours[1], linetype="dotted") +
+  
+  geom_line(data=tno_queue16_2, col=colours[1]) +
+  geom_hline(yintercept = target_queue_size_2, col=colours[1], linetype="dashed")+
+  geom_hline(yintercept = target_queue_size_20_2, col = colours[2], linetype="dashed")+
+  geom_text(data = data.frame(dts = c(as.Date("2023-01-01"),as.Date("2023-01-01"))
+                              , label = c("Target queue size","Target queue size (20% reduced demand)")
+                              , y = c(target_queue_size_2, target_queue_size_20_2)
+                              
+  ), aes(x = dts, label=label, y= y)
+  , col = c(colours[1], colours[2])
+  , size=3.5
+  , family = "sans"
+  , fontface = "italic"
+  , hjust = -0
+  , vjust = -1
+  ) +
+  
+  
+  geom_text(x = programme_dts$startdate[1]
+            , label = "T2"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            #, fontface = "bold"
+            
+  )+
+  geom_text(x = programme_dts$startdate[2]
+            , label = "T3"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            #, fontface = "bold"
+            
+  )+
+  
+  geom_text(data = tno_t4_date_20_2
+            , label = "T4"
+            #, y=8000
+            ,, y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            , fontface = "bold"
+  )+
+  
+  geom_text(data = target_20_date_2
+            , label = "T5"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            , fontface = "bold"
+  )+
+  
+  
+  geom_text(data = data.frame(dates =  as.Date(c("01-01-2025", "01-01-2025"), format = "%d-%m-%Y")
+                              , labels = c("Demand modelled at 98% current capacity"
+                                           ,"Current capacity maintained indefinitely")
+                              , y = c(6900, 5700)
+  )
+  , aes(label=labels, y=y)
+  #, y=8000
+  , col=colours[1]
+  , size=3
+  #, family = "sans"
+  , hjust = 0.1
+  , vjust = -1
+  , angle = c(0,-29)
+  
+  #          , fontface = "bold"
+  )+
+  
+  scale_y_continuous(labels=comma)+
+  scale_x_date(date_breaks = "3 month"
+               , date_labels = "%b-%y"
+               , limits = c(
+                 as.Date("2023-01-01")
+                 , as.Date("2029-04-01")
+                 
+               )
+               , expand = c(0,0)
+               , 
+  )+
+  labs(
+    title = bquote(bold("T&O: ") ~ "First GP referral to first Outpatients waiting list (2% relief capacity after Sept-24):"),
+    subtitle = "    Green = current demand projected forward, Orange = 20% demand reduced from T3",
+    y = "Queue Size",
+    x = "Month"
+  )+
+  theme(axis.text.x = element_text(angle=90),plot.margin = margin(2,4,2,2, "mm") 
+        , text = element_text(family="sans"))
+
+
+
+
+
+
+
+ggplot(f, aes(dates, mean_q)) +
+  geom_line(col = colours[2], data = ft20) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[2] 
+              , data = filter(f2, dates <= tno_summary_2$tno_sim_20$target_met_date_mc)) +
+  geom_line(col = colours[3], data = ft40) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[3] 
+              , data = filter(f3, dates <= tno_summary_2$tno_sim_40$target_met_date_mc)) +
+  geom_line(col = colours[1]) +
+  geom_ribbon(aes(y = mean_q, ymin = q_25, ymax = q_75)
+              , alpha = 0.5, fill = colours[1]) +
+  geom_text(data = data.frame(dts = c(as.Date("2023-01-01"),as.Date("2023-01-01"))
+                              , label = c("Target queue size","Target queue size (20% reduced demand)")
+                              , y = c(tno_summary_2$tno_sim$target_queue_size, tno_summary_2$tno_sim_20$target_queue_size)  
+                              
+        geom_vline(xintercept = programme_dts$startdate[1], alpha=1
+                   , colour = "black") +
+          geom_vline(xintercept = programme_dts$startdate[2], alpha=1
+                     , colour = "black") +
+          geom_vline(xintercept = tno_t4_date_20_2$dates, alpha=1
+                     , colour = "black") +
+  geom_vline(xintercept = target_20_date_2$dates, alpha = 1
+             , colour = "black") +
+                        
+                              
+  ), aes(x = dts, label=label, y= y)
+  , col = c(colours[1], colours[2])
+  , size=3.5
+  , family = "sans"
+  , fontface = "italic"
+  , hjust = -0
+  , vjust = -1
+  ) +
+  
+  
+  geom_text(x = programme_dts$startdate[1]
+            , label = "T2"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            #, fontface = "bold"
+            
+  )+
+  geom_text(x = programme_dts$startdate[2]
+            , label = "T3"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            #, fontface = "bold"
+            
+  )+
+  
+  geom_text(data = tno_t4_date_20_2
+            , label = "T4"
+            #, y=8000
+            ,, y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            , fontface = "bold"
+  )+
+  
+  geom_text(data = target_20_date_2
+            , label = "T5"
+            , y=9000
+            , col="black"
+            , size=4
+            #, family = "sans"
+            , fontface = "bold"
+  )+
+  
+  
+  geom_text(data = data.frame(dates =  as.Date(c("01-01-2025", "01-01-2025"), format = "%d-%m-%Y")
+                              , labels = c("Demand modelled at 98% current capacity"
+                                           ,"Current capacity maintained indefinitely")
+                              , y = c(6900, 5700)
+  )
+  , aes(label=labels, y=y)
+  #, y=8000
+  , col=colours[1]
+  , size=3
+  #, family = "sans"
+  , hjust = 0.1
+  , vjust = -1
+  , angle = c(0,-29)
+  
+  #          , fontface = "bold"
+  ) +
+  
+  scale_y_continuous(labels=comma)+
+  scale_x_date(date_breaks = "3 month"
+               , date_labels = "%b-%y"
+               , limits = c(
+                 as.Date("2023-01-01")
+                 , as.Date("2029-04-01")
+                 
+               )
+               , expand = c(0,0)
+               , 
+  ) +
+  labs(
+    title = bquote(bold("T&O: ") ~ "First GP referral to first Outpatients waiting list (2% relief capacity after Sept-24):"),
+    subtitle = "    Green = current demand projected forward, Orange = 20% demand reduced from T3",
+    y = "Queue Size",
+    x = "Month"
+  ) +
+  theme(axis.text.x = element_text(angle = 90), plot.margin = margin(2,4,2,2, "mm") 
+        , text = element_text(family = "sans"))

@@ -1,7 +1,7 @@
 bsol_simulate_WL <-
   function(.data, seed, start_date_name = "start_date"
            , end_date_name = "end_date", adds_name = "added", removes_name="removed"
-           , starting_wl = 0
+           , starting_wl = 0, reference_date
   ){
     
     
@@ -81,9 +81,19 @@ bsol_simulate_WL <-
       
       } 
     }
+   
+    if (!missing(reference_date)) {
+      referral_after_t3 <- ifelse(sims[[NROW(.data)]]$Referral < reference_date, 0, 1)
+      
+      t4_date <- tryCatch((sims[[NROW(.data)]] |> dplyr::filter(referral_after_t3 == 1) |> 
+                             dplyr::slice_head(n=1) |>  dplyr::pull(Referral)), error = function(e) NA)
+    
+      return(cbind(NHSRwaitinglist::wl_queue_size(sims[[NROW(.data)]]), t4_date = as.Date(t4_date, format = "%Y-%m-%d")))
+      
+      } else {
     
     return(NHSRwaitinglist::wl_queue_size(sims[[NROW(.data)]]))
-    
+    }
 }
 
 
