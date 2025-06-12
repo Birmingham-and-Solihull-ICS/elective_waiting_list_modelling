@@ -1022,7 +1022,7 @@ tno_graph_v3 <-
   ) +
   labs(
     title = bquote(bold("T&O: ") ~ "First GP referral to first Outpatients waiting list (2% relief capacity after July-25):"),
-    subtitle = "    Green = current demand/capacity, Orange = Demand 98% capacity, no demand reduction, \n    Purple =  Orange = Demand 98% capacity, 20% demand reduced from T3",
+    subtitle = "    Green = current demand/capacity, Orange = Capacity 2% above demand, no demand reduction, \n    Purple = Capacity 2% above demand, 20% demand reduced from T3",
     y = "Queue Size",
     x = "Month"
   ) +
@@ -1038,6 +1038,13 @@ tno_graph_v3
 # grDevices::png
 #        , width = 953, units = "px", height =  570, device = ragg::agg_png, res = 300)
 
-png(filename = "./output/v3/tno_v32.png",  width = 953, units = "px", height =  570, res = 180)
+png(filename = "./output/v3/tno_v3.png",  width = 953, units = "px", height =  570, res = 180)
 tno_graph_v3
 dev.off()
+
+
+
+#saveRDS(future_out1, "./output/v3/tno_futue_out.png")
+#saveRDS(future_out2, "./output/v3/tno_futue_out2.png")
+#saveRDS(future_out3, "./output/v3/tno_futue_out3.png")
+#saveRDS(f_current_act, "./output/v3/tno_f_current_act.png")
